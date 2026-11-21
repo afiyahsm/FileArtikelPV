@@ -72,9 +72,10 @@
   var tembusan = (parameter.get("cc") || "").split(",").filter(function (a) { return polaEmail.test(a.trim()); });
   var subjek = parameter.get("subject") || "";
   var badan = parameter.get("body") || "";
-  // susun ulang tautan mailto hanya dari bagian yang lolos pemeriksaan
+  // susun ulang tautan mailto hanya dari bagian yang lolos pemeriksaan (alamat sudah tervalidasi pola,
+  // jadi ditulis apa adanya: sebagian aplikasi email tidak menerjemahkan %40 kembali menjadi @)
   var tautan = "mailto:" + penerima +
-    "?cc=" + tembusan.map(encodeURIComponent).join(",") +
+    "?cc=" + tembusan.map(function (a) { return a.trim(); }).join(",") +
     "&subject=" + encodeURIComponent(subjek) +
     "&body=" + encodeURIComponent(badan);
 
