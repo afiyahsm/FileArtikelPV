@@ -53,6 +53,8 @@
   </div>
 </main>
 <script>
+// bila hanya bagian # yang berganti (halaman tidak dimuat ulang), baca ulang isinya
+window.addEventListener("hashchange", function () { location.reload(); });
 (function () {
   // Isi email dibawa di bagian "#" tautan (tidak pernah terkirim ke server):
   //   #<penerima>?cc=<a,b,c>&subject=<ter-encode>&body=<ter-encode>
