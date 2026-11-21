@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Kirim email laporan PV</title>
+<style>
+  :root { --biru: #0164C4; --teks: #1f2937; --redup: #6b7280; --garis: #dbe4ee; --latar: #f4f8fb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--latar); color: var(--teks);
+         font: 16px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 16px 40px; }
+  .kartu { background: #fff; border: 1px solid var(--garis); border-radius: 14px; padding: 22px 20px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { margin: 8px 0; }
+  .redup { color: var(--redup); font-size: 14px; }
+  .tombol { display: block; width: 100%; margin-top: 14px; padding: 14px 16px; border-radius: 10px;
+            border: 1.5px solid var(--biru); font-size: 17px; font-weight: 600; text-align: center;
+            text-decoration: none; cursor: pointer; }
+  .utama { background: var(--biru); color: #fff; }
+  .kedua { background: #fff; color: var(--biru); }
+  dl { margin: 16px 0 0; font-size: 14px; }
+  dt { color: var(--redup); margin-top: 8px; }
+  dd { margin: 0; word-break: break-all; }
+  pre { white-space: pre-wrap; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; background: var(--latar);
+        border-radius: 8px; padding: 10px; margin: 4px 0 0; }
+  #pesan { min-height: 1.5em; font-size: 14px; color: var(--biru); }
+  .tersembunyi { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="kartu">
+    <h1 id="judul">Membuka aplikasi email…</h1>
+    <p id="keterangan" class="redup">Halaman ini meneruskan tombol email di dashboard ke aplikasi email perangkat Anda,
+      lengkap dengan format email laporan PV.</p>
+
+    <div id="isi" class="tersembunyi">
+      <a id="buka" class="tombol utama" href="#">Buka aplikasi email</a>
+      <button id="salin" class="tombol kedua" type="button">Salin isi email</button>
+      <p id="pesan" role="status"></p>
+      <p class="redup">Bila aplikasi email tidak terbuka, ketuk <b>Buka aplikasi email</b>. Bila tetap tidak terbuka,
+        ketuk <b>Salin isi email</b> lalu tempel di aplikasi email Anda.</p>
+      <dl>
+        <dt>Kepada</dt><dd id="kepada"></dd>
+        <dt>Cc</dt><dd id="tembusan"></dd>
+        <dt>Subjek</dt><dd id="subjek"></dd>
+        <dt>Isi</dt><dd><pre id="badan"></pre></dd>
+      </dl>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  // Isi email dibawa di bagian "#" tautan (tidak pernah terkirim ke server):
+  //   #<penerima>?cc=<a,b,c>&subject=<ter-encode>&body=<ter-encode>
+  var mentah = location.hash.replace(/^#/, "");
+  var tanya = mentah.indexOf("?");
+  var penerima = "";
+  try { penerima = decodeURIComponent(tanya < 0 ? mentah : mentah.slice(0, tanya)); } catch (e) { penerima = ""; }
+  var polaEmail = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+  var judul = document.getElementById("judul");
+  var ket = document.getElementById("keterangan");
+  if (!polaEmail.test(penerima)) {
+    judul.textContent = "Tautan email tidak lengkap";
+    ket.textContent = "Buka halaman ini dari tombol iPad / HP di kartu Email Drug Safety pada dashboard.";
+    return;
+  }
+  var parameter = new URLSearchParams(tanya < 0 ? "" : mentah.slice(tanya + 1));
+  var tembusan = (parameter.get("cc") || "").split(",").filter(function (a) { return polaEmail.test(a.trim()); });
+  var subjek = parameter.get("subject") || "";
+  var badan = parameter.get("body") || "";
+  // susun ulang tautan mailto hanya dari bagian yang lolos pemeriksaan
+  var tautan = "mailto:" + penerima +
+    "?cc=" + tembusan.map(encodeURIComponent).join(",") +
+    "&subject=" + encodeURIComponent(subjek) +
+    "&body=" + encodeURIComponent(badan);
+
+  document.getElementById("kepada").textContent = penerima;
+  document.getElementById("tembusan").textContent = tembusan.join(", ") || "-";
+  document.getElementById("subjek").textContent = subjek;
+  document.getElementById("badan").textContent = badan;
+  var buka = document.getElementById("buka");
+  buka.href = tautan;
+  document.getElementById("isi").classList.remove("tersembunyi");
+  judul.textContent = "Email laporan PV";
+
+  var pesan = document.getElementById("pesan");
+  document.getElementById("salin").addEventListener("click", function () {
+    var teks = "Kepada: " + penerima + "\nCc: " + tembusan.join(", ") + "\nSubjek: " + subjek + "\n\n" + badan;
+    function berhasil() { pesan.textContent = "Isi email sudah disalin. Tempel di aplikasi email Anda."; }
+    function cadangan() {
+      var t = document.createElement("textarea");
+      t.value = teks; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.appendChild(t); t.select(); t.setSelectionRange(0, teks.length);
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(t);
+      pesan.textContent = ok ? "Isi email sudah disalin. Tempel di aplikasi email Anda." : "Gagal menyalin. Tekan lama teks di bawah untuk menyalin.";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(teks).then(berhasil, cadangan);
+    } else { cadangan(); }
+  });
+
+  // langsung buka aplikasi email, kecuali mode uji (?uji) dipakai untuk memeriksa halaman
+  if (!/[?&]uji\b/.test(location.search)) {
+    setTimeout(function () { location.href = tautan; }, 150);
+  }
+})();
+</script>
+</body>
+</html>
